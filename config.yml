@@ -1,0 +1,64 @@
+--- 
+- name: Preconfig
+  hosts: My_Server
+  tasks: 
+      - name: "Установка Docker"
+        block:
+            - name: "Добавляем  universe"
+              shell: "sudo add-apt-repository universe && sudo apt update && sudo apt upgrade -y"
+
+            - name: "Установка дополнительных пакетов"
+              apt: 
+                name:
+                  - ca-certificates
+                  - curl
+                  - gnupg
+                  - lsb-release
+
+            - name: "Добоовление ключа Docker"
+              apt_key:
+                url: https://download.docker.com/linux/ubuntu/gpg
+                state: present
+
+            - name: "Установка стабильного репозитория"
+              apt_repository:
+                repo: > 
+                  deb [arch=arm64 signed-by=/etc/apt/keyrings/docker.gpg] 
+                  https://download.docker.com/linux/ubuntu 
+                  jammy stable
+                state: present
+                filename: docker
+              
+            - name: "Установка Docker-Ce"
+              apt: 
+                name: docker-ce
+
+            - name: "Проверка что Docker установлен и перезагружен"
+              service: 
+                name: docker
+                state: restarted
+                enabled: yes
+
+        become: true
+
+      - name: "Установка Docker-compose"
+        block:
+          - name: "# sudo apt install docker-compose-plugin"
+            apt:
+              name: docker-compose-plugin
+
+        become: true
+          
+      - name: "Завершение установки"
+        block:
+            - name: "Добоовление пользователя в группу Docker"
+              user:
+                name: "{{ansible_user}}"
+                groups: "docker"
+                append: yes
+          
+            - name: "Перезагрузка сервера" 
+                reboot:
+                  reboot_timeout: 3
+                  
+        become: true
